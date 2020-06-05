@@ -1,6 +1,7 @@
 package com.lpl.quickim;
 
 import android.annotation.TargetApi;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -19,6 +20,7 @@ import android.widget.Toast;
 import com.hyphenate.EMCallBack;
 import com.hyphenate.chat.EMClient;
 import com.lpl.quickim.im.ChatActivity;
+import com.lpl.quickim.im.DemoHelper;
 import com.lpl.quickim.runtimepermissions.PermissionsManager;
 import com.lpl.quickim.runtimepermissions.PermissionsResultAction;
 
@@ -84,7 +86,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
 
             case R.id.register://注册
-                Toast.makeText(MainActivity.this,"未开放",Toast.LENGTH_SHORT).show();
+//                Toast.makeText(MainActivity.this,"未开放",Toast.LENGTH_SHORT).show();
+                logout();
                 break;
 
             case R.id.im_button://聊天
@@ -101,6 +104,52 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
+
+        private  void logout() {
+            final ProgressDialog pd = new ProgressDialog(this);
+            String st = getResources().getString(R.string.Are_logged_out);
+            pd.setMessage(st);
+            pd.setCanceledOnTouchOutside(false);
+            pd.show();
+            DemoHelper.getInstance().logout(true,new EMCallBack() {
+
+                @Override
+                public void onSuccess() {
+                    runOnUiThread(new Runnable() {
+                        public void run() {
+                            Log.d("main", "退出聊天服务器成功！");
+                            pd.dismiss();
+                            // show login screen
+                            usernameEditText.setText("");
+                            passwordEditText.setText("");
+                        }
+                    });
+                }
+
+                @Override
+                public void onProgress(int progress, String status) {
+
+                }
+
+                @Override
+                public void onError(int code, String message) {
+                   runOnUiThread(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            // TODO Auto-generated method stub
+                            pd.dismiss();
+                            Toast.makeText(MainActivity.this, "unbind devicetokens failed", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+                }
+            });
+        }
+
+
+
+
+
     private void Login() {
 
         String currentUsername = usernameEditText.getText().toString().trim();
@@ -115,12 +164,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             return;
         }
 
+        final ProgressDialog pd = new ProgressDialog(this);
+        String st = getResources().getString(R.string.Is_landing);
+        pd.setMessage(st);
+        pd.setCanceledOnTouchOutside(false);
+        pd.show();
+
         EMClient.getInstance().login(currentUsername, currentPassword, new EMCallBack() {//回调
             @Override
             public void onSuccess() {
                 EMClient.getInstance().groupManager().loadAllGroups();
                 EMClient.getInstance().chatManager().loadAllConversations();
                 Log.d("main", "登录聊天服务器成功！");
+                runOnUiThread(new Runnable() {
+                    public void run() {
+                        pd.dismiss();
+                        // show login screen
+
+                    }
+                });
             }
 
             @Override
@@ -131,6 +193,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public void onError(int code, String message) {
                 Log.d("main", "登录聊天服务器失败！");
+                runOnUiThread(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        // TODO Auto-generated method stub
+                        pd.dismiss();
+                        Toast.makeText(MainActivity.this, "登录聊天服务器失败", Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
     }
